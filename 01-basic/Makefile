@@ -9,6 +9,7 @@ endif
 ifndef CN
 CN := $(shell hostname)
 endif
+# CN: localhost
 
 ifdef PASSWORD
 P12PASS := true
@@ -36,10 +37,46 @@ info:
 	openssl x509 -in $(SERVER_CERT_LOCATION) -text -noout
 	@echo "\n\n===> Client certificate details:"
 	openssl x509 -in $(CLIENT_CERT_LOCATION) -text -noout
+# $ PASSWORD=bunnies make -n --just-print info
+# echo "===> Server certificate details:"
+# openssl x509 -in result/server_certificate.pem -text -noout
+# echo "\n\n===> Client certificate details:"
+# openssl x509 -in result/client_certificate.pem -text -noout
+# $
+
 
 client: p12pass
 	@echo Using $(CN) as CN value.
 	$(MAKE) target DIR=$(DIR) TARGET=client EXTENSIONS=client_extensions CN=$(CN)
+# $ PASSWORD=bunnies make -n --just-print client
+# true
+# echo Using localhost as CN value.
+# /Library/Developer/CommandLineTools/usr/bin/make target DIR=. TARGET=client EXTENSIONS=client_extensions CN=localhost
+# mkdir ./testca
+# cp openssl.cnf ./testca/openssl.cnf
+# { ( cd ./testca && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl req -x509 -days 3650 -config openssl.cnf -newkey rsa:4096 \
+# 	      -out cacert.pem -outform PEM -subj /CN=MyTestRootCA/L=$$/ -nodes && \
+# 	    openssl x509 -in cacert.pem -out cacert.cer -outform DER ) \
+# 	  || (rm -rf testca && false); }
+# mkdir ./client
+# { ( cd ./client && \
+# 	    openssl genrsa -out key.pem 4096 &&\
+# 	    openssl req -new -key key.pem -out req.pem -days 3650 -outform PEM\
+# 		-subj /CN=localhost/O=client/L=$$/ -nodes &&\
+# 	    cd ../testca && \
+# 	    openssl ca -config openssl.cnf  -days 3650 -in ../client/req.pem -out \
+# 	      ../client/cert.pem -notext -batch -extensions \
+# 	      client_extensions && \
+# 	    cd ../client && \
+# 	    openssl pkcs12 -export -out keycert.p12 -in cert.pem -inkey key.pem \
+# 	      -passout pass:bunnies ) || (rm -rf ./client && false); }
+# $
+
 
 server: p12pass
 	@echo Using $(CN) as CN value.
@@ -48,6 +85,7 @@ server: p12pass
 p12pass:
 	$(P12PASS)
 
+# make target DIR=. TARGET=client EXTENSIONS=client_extensions CN=localhost
 target: $(DIR)/testca
 	mkdir $(DIR)/$(TARGET)
 	{ ( cd $(DIR)/$(TARGET) && \
@@ -108,3 +146,25 @@ verify-pkcs12:
 	@echo "Will verify PKCS12 stores..."
 	keytool -v -list -storetype pkcs12 -keystore result/server_key.p12
 	keytool -v -list -storetype pkcs12 -keystore result/client_key.p12
+
+print:
+	@echo "OPENSSL: "${OPENSSL}
+	@echo "DIR: "${DIR}
+	@echo "CN: "${CN}
+	@echo "P12PASS: "${P12PASS}
+	@echo "NUMBER_OF_PRIVATE_KEY_BITS: "${NUMBER_OF_PRIVATE_KEY_BITS}
+	@echo "DAYS_OF_VALIDITY: "${DAYS_OF_VALIDITY}
+	@echo "CA_CERT_LOCATION: "${CA_CERT_LOCATION}
+	@echo "CLIENT_CERT_LOCATION: "${CLIENT_CERT_LOCATION}
+	@echo "SERVER_CERT_LOCATION: "${SERVER_CERT_LOCATION}
+
+# $ PASSWORD=bunnies make print
+# OPENSSL: openssl
+# DIR: .
+# CN: localhost
+# P12PASS: true
+# NUMBER_OF_PRIVATE_KEY_BITS: 4096
+# DAYS_OF_VALIDITY: 3650
+# CA_CERT_LOCATION: result/ca_certificate.pem
+# CLIENT_CERT_LOCATION: result/client_certificate.pem
+# SERVER_CERT_LOCATION: result/server_certificate.pem

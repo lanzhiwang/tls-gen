@@ -185,3 +185,34 @@ verify-pkcs12:
 	@echo "Will verify PKCS12 stores..."
 	keytool -v -list -storetype pkcs12 -keystore result/server_key.p12
 	keytool -v -list -storetype pkcs12 -keystore result/client_key.p12
+
+print:
+	@echo "OPENSSL: "${OPENSSL}
+	@echo "DIR: "${DIR}
+	@echo "CN: "${CN}
+	@echo "ENSURE_PASSPHRASE: "${ENSURE_PASSPHRASE}
+	@echo "NUMBER_OF_PRIVATE_KEY_BITS: "${NUMBER_OF_PRIVATE_KEY_BITS}
+	@echo "DAYS_OF_VALIDITY: "${DAYS_OF_VALIDITY}
+	@echo "ROOT_CA_KEY: "${ROOT_CA_KEY}
+	@echo "ROOT_CA_CERT: "${ROOT_CA_CERT}
+	@echo "INTERMEDIATE_CA1_KEY: "${INTERMEDIATE_CA1_KEY}
+	@echo "INTERMEDIATE_CA1_CERT: "${INTERMEDIATE_CA1_CERT}
+	@echo "INTERMEDIATE_CA2_KEY: "${INTERMEDIATE_CA2_KEY}
+	@echo "INTERMEDIATE_CA2_CERT: "${INTERMEDIATE_CA2_CERT}
+	@echo "ROOT_INTERMEDIATE1_CHAINED_CERT: "${ROOT_INTERMEDIATE1_CHAINED_CERT}
+	@echo "FULLY_CHAINED_CERT: "${FULLY_CHAINED_CERT}
+# $ PASSWORD=bunnies make print
+# OPENSSL: openssl
+# DIR: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates
+# CN: localhost
+# ENSURE_PASSPHRASE: true
+# NUMBER_OF_PRIVATE_KEY_BITS: 4096
+# DAYS_OF_VALIDITY: 3650
+# ROOT_CA_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/root_ca/private/root_ca_key.pem
+# ROOT_CA_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/root_ca/certs/root_ca_certificate.pem
+# INTERMEDIATE_CA1_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca1/private/cakey.pem
+# INTERMEDIATE_CA1_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca1/certs/cacert.pem
+# INTERMEDIATE_CA2_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/private/cakey.pem
+# INTERMEDIATE_CA2_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/cacert.pem
+# ROOT_INTERMEDIATE1_CHAINED_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem
+# FULLY_CHAINED_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/i2_i1_r_chained_certificate.pem
