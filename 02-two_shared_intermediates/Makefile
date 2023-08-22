@@ -1,28 +1,34 @@
 # -*- mode: BSDmakefile; tab-width: 8; indent-tabs-mode: nil -*-
 
 OPENSSL=openssl
+# OPENSSL: openssl
 
 ifndef DIR
 DIR := $(shell pwd)
 endif
+# DIR: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates
 
 ifndef CN
 CN := $(shell hostname)
 endif
+# CN: localhost
 
 ifdef PASSWORD
 ENSURE_PASSPHRASE := true
 else
 ENSURE_PASSPHRASE := @echo No PASSWORD defined. && false
 endif
+# ENSURE_PASSPHRASE: true
 
 ifndef NUMBER_OF_PRIVATE_KEY_BITS
 NUMBER_OF_PRIVATE_KEY_BITS := 4096
 endif
+# NUMBER_OF_PRIVATE_KEY_BITS: 4096
 
 ifndef DAYS_OF_VALIDITY
 DAYS_OF_VALIDITY := 3650
 endif
+# DAYS_OF_VALIDITY: 3650
 
 .PRECIOUS: %/root_ca
 .PHONY: %/clean target all ensure_passphrase
@@ -36,12 +42,107 @@ info:
 	openssl x509 -in $(SERVER_CERT_LOCATION) -text -noout
 	@echo "\n\n===> Client certificate details:"
 	openssl x509 -in $(CLIENT_CERT_LOCATION) -text -noout
+# $ PASSWORD=bunnies make -n --just-print info
+# echo "===> Server certificate details:"
+# openssl x509 -in result/server_certificate.pem -text -noout
+# echo "\n\n===> Client certificate details:"
+# openssl x509 -in result/client_certificate.pem -text -noout
 
 cas: ensure_passphrase root_ca intermediate_ca1 intermediate_ca2 concat
 
 client: ensure_passphrase
 	@echo Using $(CN) as CN value.
 	$(MAKE) target DIR=$(DIR) TARGET=client EXTENSIONS=client_extensions CN=$(CN)
+# $ PASSWORD=bunnies make -n --just-print client
+# true
+# echo Using localhost as CN value.
+# /Library/Developer/CommandLineTools/usr/bin/make target DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates TARGET=client EXTENSIONS=client_extensions CN=localhost
+# true
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem 4096 && \
+# 	    openssl req -x509 -config openssl.cnf -new \
+# 		-key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# 		-out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem -subj /CN=MyTestRootCA/ && \
+# 	    openssl x509 -days 3650 \
+# 			-in /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+#                         -out certs/root_ca_certificate.cer \
+# 			-outform DER -extensions ca_extensions ) || (rm -rf root_ca && false); }
+
+# echo "Will generate intermediate CA 1"
+# /Library/Developer/CommandLineTools/usr/bin/make intermediate_ca N=1 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA1
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA1/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
+# echo "\n\nWill verify intermediate CA 1"
+# openssl verify -CAfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem
+# echo "\n\n----------------------------------------------------------------------------------------------\n\n"
+
+# echo "Will generate intermediate CA 2"
+# /Library/Developer/CommandLineTools/usr/bin/make intermediate_ca N=2 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA2
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA2/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
+# cat /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem > /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem
+# echo "Will verify intermediate CA 2\n\n"
+# openssl verify -CAfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem \
+# 	           /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem
+
+# cat /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem > /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i2_i1_r_chained_certificate.pem
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client && \
+# 	    openssl genrsa -out key.pem 4096 &&\
+# 	    openssl req -new -key key.pem -out req.pem -days 3650 -outform PEM\
+# 		-subj /CN=localhost/O=client/L=$$/ -nodes && \
+# 	    cd ../intermediate_ca2 && \
+# 	    openssl ca -config openssl.cnf  -days 3650 -in ../client/req.pem \
+# 	        -out ../client/cert.pem \
+# 		-key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem -cert /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# 	        -notext -batch -extensions client_extensions && \
+# 	    cd ../client && \
+# 	    openssl pkcs12 -export -out keycert.p12 -in cert.pem -inkey key.pem \
+# 	      -passout pass:bunnies ) || (rm -rf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client && false); }
+# $
+
 
 server: ensure_passphrase
 	@echo Using $(CN) as CN value.
@@ -52,7 +153,10 @@ ensure_passphrase:
 
 ROOT_CA_KEY  = $(DIR)/root_ca/private/root_ca_key.pem
 ROOT_CA_CERT = $(DIR)/root_ca/certs/root_ca_certificate.pem
+# ROOT_CA_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/root_ca/private/root_ca_key.pem
+# ROOT_CA_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/root_ca/certs/root_ca_certificate.pem
 
+# PASSWORD=bunnies make target DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates TARGET=client EXTENSIONS=client_extensions CN=localhost
 target: cas
 	mkdir $(DIR)/$(TARGET)
 	{ ( cd $(DIR)/$(TARGET) && \
@@ -67,6 +171,47 @@ target: cas
 	    cd ../$(TARGET) && \
 	    $(OPENSSL) pkcs12 -export -out keycert.p12 -in cert.pem -inkey key.pem \
 	      -passout pass:$(PASSWORD) ) || (rm -rf $(DIR)/$(TARGET) && false); }
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client && \
+# 	    openssl genrsa -out key.pem 4096 &&\
+# 	    openssl req -new -key key.pem -out req.pem -days 3650 -outform PEM\
+# 		-subj /CN=localhost/O=client/L=$$/ -nodes && \
+# 	    cd ../intermediate_ca2 && \
+# 	    openssl ca -config openssl.cnf  -days 3650 -in ../client/req.pem \
+# 	        -out ../client/cert.pem \
+# 		-key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem -cert /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# 	        -notext -batch -extensions client_extensions && \
+# 	    cd ../client && \
+# 	    openssl pkcs12 -export -out keycert.p12 -in cert.pem -inkey key.pem \
+# 	      -passout pass:bunnies ) || (rm -rf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client && false); }
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client
+# cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/client
+# openssl genrsa -out key.pem 4096
+
+# openssl req -new -key key.pem -out req.pem -days 3650 -outform PEM -subj /CN=localhost/O=client/L=$$/ -nodes
+
+# cd ../intermediate_ca2
+
+# openssl ca -config openssl.cnf  -days 3650 -in ../client/req.pem \
+# -out ../client/cert.pem \
+# -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem \
+# -cert /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# -notext -batch -extensions client_extensions
+
+# cd ../client
+
+# openssl pkcs12 -export -out keycert.p12 -in cert.pem -inkey key.pem -passout pass:bunnies
+
+# $ tree -a .
+# .
+# ├── cert.pem
+# ├── key.pem
+# ├── keycert.p12
+# └── req.pem
+
+# 0 directories, 4 files
+
 
 root_ca:
 	mkdir $(DIR)/root_ca
@@ -84,15 +229,73 @@ root_ca:
 			-in $(ROOT_CA_CERT) \
                         -out certs/root_ca_certificate.cer \
 			-outform DER -extensions ca_extensions ) || (rm -rf $@ && false); }
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem 4096 && \
+# 	    openssl req -x509 -config openssl.cnf -new \
+# 		-key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# 		-out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem -subj /CN=MyTestRootCA/ && \
+# 	    openssl x509 -days 3650 \
+# 			-in /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+#                         -out certs/root_ca_certificate.cer \
+# 			-outform DER -extensions ca_extensions ) || (rm -rf root_ca && false); }
+
+##################################################################################
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca
+
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/openssl.cnf
+
+# cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca
+
+# mkdir certs private
+
+# chmod 700 private
+
+# echo 01 > serial
+
+# touch index.txt
+
+# openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem 4096
+
+# openssl req -x509 -config openssl.cnf -new -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem -subj /CN=MyTestRootCA/
+
+# openssl x509 -days 3650 -in /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem -out certs/root_ca_certificate.cer -outform DER -extensions ca_extensions
+
+# $ tree -a .
+# .
+# ├── certs
+# │   ├── root_ca_certificate.cer
+# │   └── root_ca_certificate.pem
+# ├── index.txt
+# ├── openssl.cnf
+# ├── private
+# │   └── root_ca_key.pem
+# └── serial
+
+# 2 directories, 6 files
+
 
 INTERMEDIATE_CA1_KEY  = $(DIR)/intermediate_ca1/private/cakey.pem
 INTERMEDIATE_CA1_CERT = $(DIR)/intermediate_ca1/certs/cacert.pem
+# INTERMEDIATE_CA1_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca1/private/cakey.pem
+# INTERMEDIATE_CA1_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca1/certs/cacert.pem
 
 INTERMEDIATE_CA2_KEY  = $(DIR)/intermediate_ca2/private/cakey.pem
 INTERMEDIATE_CA2_CERT = $(DIR)/intermediate_ca2/certs/cacert.pem
+# INTERMEDIATE_CA2_KEY: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/private/cakey.pem
+# INTERMEDIATE_CA2_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/cacert.pem
 
 ROOT_INTERMEDIATE1_CHAINED_CERT = $(DIR)/intermediate_ca2/certs/i1_r_chained_certificate.pem
 FULLY_CHAINED_CERT              = $(DIR)/intermediate_ca2/certs/i2_i1_r_chained_certificate.pem
+# ROOT_INTERMEDIATE1_CHAINED_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem
+# FULLY_CHAINED_CERT: /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/two_shared_intermediates/intermediate_ca2/certs/i2_i1_r_chained_certificate.pem
+
 
 intermediate_ca1:
 	@echo "Will generate intermediate CA 1"
@@ -100,6 +303,36 @@ intermediate_ca1:
 	@echo "\n\nWill verify intermediate CA 1"
 	$(OPENSSL) verify -CAfile $(ROOT_CA_CERT) $(INTERMEDIATE_CA1_CERT)
 	@echo "\n\n----------------------------------------------------------------------------------------------\n\n"
+# echo "Will generate intermediate CA 1"
+# /Library/Developer/CommandLineTools/usr/bin/make intermediate_ca N=1 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA1
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA1/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
+
+# echo "\n\nWill verify intermediate CA 1"
+
+# openssl verify -CAfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem
+
+# echo "\n\n----------------------------------------------------------------------------------------------\n\n"
+
 
 intermediate_ca2:
 	@echo "Will generate intermediate CA 2"
@@ -108,7 +341,39 @@ intermediate_ca2:
 	@echo "Will verify intermediate CA 2\n\n"
 	$(OPENSSL) verify -CAfile $(ROOT_INTERMEDIATE1_CHAINED_CERT) \
 	           $(INTERMEDIATE_CA2_CERT)
+# echo "Will generate intermediate CA 2"
+# /Library/Developer/CommandLineTools/usr/bin/make intermediate_ca N=2 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA2
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA2/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
 
+# cat /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem > /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem
+
+# echo "Will verify intermediate CA 2\n\n"
+
+# openssl verify -CAfile \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i1_r_chained_certificate.pem \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem
+
+
+# make intermediate_ca N=1 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA1
+# make intermediate_ca N=2 PARENT_KEY=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem PARENT_CERT=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem DIR=/Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates CN=MyIntermediateCA2
 intermediate_ca:
 	mkdir $(DIR)/intermediate_ca$(N)
 	cp openssl.cnf $(DIR)/intermediate_ca$(N)/openssl.cnf
@@ -129,9 +394,134 @@ intermediate_ca:
 		           -in      $(DIR)/intermediate_ca$(N)/certs/ca_csr.pem \
 		           -out     $(DIR)/intermediate_ca$(N)/certs/cacert.pem \
 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf $@ &&  false); }
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA1/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/openssl.cnf
+# cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1
+# mkdir certs private
+# chmod 700 private
+# echo 01 > serial
+# touch index.txt
+# openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem 4096
+
+# openssl req -config openssl.cnf -new \
+# -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# -passin pass:bunnies -subj /CN=MyIntermediateCA1/O=client/L=$$/
+
+# openssl ca -config openssl.cnf -days 3650 \
+# -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/private/root_ca_key.pem \
+# -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/ca_csr.pem \
+# -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# -notext -md sha1 -batch -extensions ca_extensions
+
+# $ tree -a .
+# .
+# ├── certs
+# │   ├── 01.pem
+# │   ├── ca_csr.pem
+# │   └── cacert.pem
+# ├── index.txt
+# ├── index.txt.attr
+# ├── index.txt.old
+# ├── openssl.cnf
+# ├── private
+# │   └── cakey.pem
+# ├── serial
+# └── serial.old
+
+# 2 directories, 10 files
+
+#######################################################################################################################
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/openssl.cnf
+# { ( cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2 && \
+# 	    mkdir certs private && \
+# 	    chmod 700 private && \
+# 	    echo 01 > serial && \
+# 	    touch index.txt && \
+# 	    openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem 4096 && \
+# 	    openssl req -config openssl.cnf -new \
+# 	            -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem \
+# 	            -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		    -passin pass:bunnies \
+# 		    -subj /CN=MyIntermediateCA2/O=client/L=$$/ && \
+# 	   openssl ca -config openssl.cnf -days 3650 \
+# 		           -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# 		           -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# 		           -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# 		           -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# 		           -notext -md sha1 -batch -extensions ca_extensions ) || (rm -rf intermediate_ca &&  false); }
+
+# mkdir /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2
+# cp openssl.cnf /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/openssl.cnf
+# cd /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2
+# mkdir certs private
+# chmod 700 private
+# echo 01 > serial
+# touch index.txt
+
+# openssl genrsa -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem 4096
+
+# openssl req -config openssl.cnf -new \
+# -key /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/private/cakey.pem \
+# -out /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# -passin pass:bunnies -subj /CN=MyIntermediateCA2/O=client/L=$$/
+
+# openssl ca -config openssl.cnf -days 3650 \
+# -keyfile /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/private/cakey.pem \
+# -cert    /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# -in      /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/ca_csr.pem \
+# -out     /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# -notext -md sha1 -batch -extensions ca_extensions
+
+# $ tree -a .
+# .
+# ├── certs
+# │   ├── 01.pem
+# │   ├── ca_csr.pem
+# │   └── cacert.pem
+# ├── index.txt
+# ├── index.txt.attr
+# ├── index.txt.old
+# ├── openssl.cnf
+# ├── private
+# │   └── cakey.pem
+# ├── serial
+# └── serial.old
+
+# 2 directories, 10 files
+
 
 concat: 
 	cat $(INTERMEDIATE_CA2_CERT) $(INTERMEDIATE_CA1_CERT) $(ROOT_CA_CERT) > $(FULLY_CHAINED_CERT)
+# cat \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/cacert.pem \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca1/certs/cacert.pem \
+# /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/root_ca/certs/root_ca_certificate.pem \
+# > /Users/huzhi/work/code/go_code/rabbitmq/tls-gen/02-two_shared_intermediates/intermediate_ca2/certs/i2_i1_r_chained_certificate.pem
+
 
 clean:
 	rm -rf $(DIR)/root_ca
